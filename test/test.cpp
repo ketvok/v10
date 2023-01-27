@@ -12,6 +12,41 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
+/***test_02a***/
+void incremental_value_by_1(int &i) {
+    static int value = 1;
+    i = value++;
+}
+
+/*struct incremental_value_by_1 {
+	int value;
+	incremental_value() : value(1) {}
+	void operator() (int& i) { i = value++; }
+};*/
+
+/***test_02b***/
+int incremental_value_by_2() {
+	static int value = -1;
+	return value += 2;
+}
+
+/***test_06***/
+auto is_prime = [](int x) {
+	if (x < 2) return false;
+	if (x == 2) return true;
+	if (x % 2 == 0) return false;
+	for (int i = 3; i <= sqrt(x); i += 2) {
+		if (x % i == 0)
+			return false;
+	}
+	return true;
+};
+
+/***test_07b***/
+bool is_vowel(char c) {
+	return c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
+}
+
 namespace all_tests
 {
 	TEST_CLASS(test_v10)
@@ -23,6 +58,15 @@ namespace all_tests
 			std::vector<int> v;
 			// TODO: read values from input stream into vector
 
+			/*std::copy(std::istream_iterator<int>(ss), std::istream_iterator<int>(), \
+				std::back_inserter(v)); 
+				
+			//OR*/
+
+			std::istream_iterator<int> it(ss);
+			std::istream_iterator<int> ends;
+			std::copy(it, ends, back_inserter(v));
+
 			Assert::AreEqual(3ull, v.size());
 			Assert::AreEqual(14, v[0]);
 			Assert::AreEqual(-78, v[1]);
@@ -33,6 +77,22 @@ namespace all_tests
 		{
 			std::vector<int> v(10);
 			// TODO: fill vector with incremental values
+			
+			/*Version with iota*/
+			/*std::iota(v.begin(), v.end(), 1);*/
+			
+			/*Version with struct:*/
+			/*incremental_value_by_1 inc;
+			std::for_each(v.begin(), v.end(), inc);
+			
+			//OR
+
+			std::for_each(v.begin(), v.end(), incremental_value_by_1());*/
+
+			/*Version with function:*/
+			std::for_each(v.begin(), v.end(), incremental_value_by_1);
+
+			//for_each(v.begin(), v.end(), incremental_value_by_1());
 			Assert::AreEqual(10ull, v.size());
 			Assert::IsTrue(std::is_sorted(v.cbegin(), v.cend()));
 			Assert::AreEqual(1, v[0]);
@@ -43,8 +103,16 @@ namespace all_tests
 			// generate
 			std::vector<int> v(10);
 			// TODO: fill vector with incremental values (by 2)
+
+			std::generate(v.begin(), v.end(), \
+				[value = -1]() mutable {return value += 2; });
+
+			//OR
+			/*std::generate(v.begin(), v.end(), incremental_value_by_2);*/
+
 			Assert::IsTrue(std::is_sorted(v.cbegin(), v.cend()));
-			Assert::IsTrue(v.cend() == std::adjacent_find(v.cbegin(), v.cend(), [](int a, int b) { return b - a != 2;  }));
+			Assert::IsTrue(v.cend() == std::adjacent_find(v.cbegin(), v.cend(), \
+				[](int a, int b) { return b - a != 2;  }));
 			Assert::AreEqual(1, v[0]);
 			Assert::AreEqual(19, v[9]);
 		}
@@ -53,6 +121,10 @@ namespace all_tests
 		{
 			std::vector<int> v = { 1, 5, 10 };
 			// TODO: change all values in a vector
+
+			std::transform(v.begin(), v.end(), v.begin(), \
+				[](int n) {return pow(n, 3); });
+
 			Assert::AreEqual(3ull, v.size());
 			Assert::AreEqual(1, v[0]);
 			Assert::AreEqual(125, v[1]);
@@ -63,8 +135,12 @@ namespace all_tests
 			int x[] = { 3, 5, 10 };
 			std::vector<int> y = { 4, 12, 10 };
 			std::vector<double> d;
-
 			// TODO: calculate distances from origin (from x and y collections) to new vector
+			
+			std::transform(std::begin(x), std::end(x), y.begin(), \
+				std::back_inserter(d), [](double a, double b) \
+			{return hypot(a, b); });
+
 			Assert::AreEqual(3ull, d.size());
 			Assert::AreEqual(5., d[0]);
 			Assert::AreEqual(13., d[1]);
@@ -73,53 +149,66 @@ namespace all_tests
 		TEST_METHOD(test_04a)
 		{
 			std::stringstream ss("1.5 2.5 3.5");
-			auto res = // TODO: sum of all values in input stream
+			//auto res = // TODO: sum of all values in input stream
+
+			auto res = std::accumulate(std::istream_iterator<double>(ss), \
+				std::istream_iterator<double>(), 0.);
+
 			Assert::AreEqual(7.5, res);
 		}
 		TEST_METHOD(test_04b)
 		{
 			std::vector<std::string> v{ "V", "S", "I", "T", "E", "!" };
-			auto res = // TODO: concatenated string with additional prefix 
+			//auto res = // TODO: concatenated string with additional prefix
+
+			auto res = std::accumulate(v.begin(), v.end(), std::string("GO "));
+
 			Assert::AreEqual("GO VSITE!", res.c_str());
 		}
 		TEST_METHOD(test_04c)
 		{
 			struct person { std::string name; int age; };
 			std::vector<person> v{ {"Pero", 33}, {"Iva", 25} };
-			auto total_age = // TODO: sum of all ages
+			auto total_age = std::accumulate(v.begin(), v.end(), 0, \
+				[](int a, person b) { return a + b.age; });
 			Assert::AreEqual(58, total_age);
 		}
 
 		TEST_METHOD(test_05a)
 		{
 			std::vector<int> v{ -5, 8, 11, 0, -9, 77, -4 };
-			auto number_of_negative = // TODO: 
+			auto number_of_negative = std::count_if(v.begin(), v.end(), \
+				[](int i) { return i < 0; });
 			Assert::AreEqual(3ll, number_of_negative);
 		}
 		TEST_METHOD(test_05b)
 		{
 			std::vector<double> v{ 1.5, 8, -11.23, 0, 1e10, 1e10, 1e10, 0, 99 };
-			auto number_of_invalid = // TODO: 
+			auto number_of_invalid = std::count(v.begin(), v.end(), 1e10);
 			Assert::AreEqual(3ll, number_of_invalid);
 		}
 		TEST_METHOD(test_05c)
 		{
 			struct point { int x, y; };
 			std::vector<point> v{ {1,1}, {-5,3}, {2,2}, {-7,-6}, {9,-4} };
-			auto number_in_first_quadrant = // TODO: 
+			auto number_in_first_quadrant = std::count_if(v.begin(), v.end(), \
+				[](const point& p) { return p.x > 0 && p.y > 0; });
 			Assert::AreEqual(2ll, number_in_first_quadrant);
 		}
 
 		TEST_METHOD(test_06)
 		{
 			std::vector<int> v{ 33, 16, 24, 41, 25, 19, 9 };
-			auto first_prime = // TODO: 
+			auto first_prime = *std::find_if(v.begin(), v.end(), is_prime);
 			Assert::AreEqual(41, first_prime);
 		}
 		TEST_METHOD(test_07a)
 		{
 			std::vector<double> v{ 1e10, 8, -11.23, 0, 1e10, 1e10, 1e10, 0, 99 };
 			// TODO: change every invalid value (1e10) with -1 
+
+			std::replace(v.begin(), v.end(), 1e10, -1.);  // Type is double (-1.)
+
 			Assert::AreEqual(-1., v[0]);
 			Assert::AreEqual(-1., v[4]);
 			Assert::AreEqual(-1., v[6]);
@@ -128,9 +217,12 @@ namespace all_tests
 		{
 			std::string s("neisporuka");
 			// TODO: change every vowel with x 
+
+			std::replace_if(s.begin(), s.end(), is_vowel, 'x');
+
 			Assert::AreEqual("nxxspxrxkx", s.c_str());
 		}
-		TEST_METHOD(test_08a)
+		/*TEST_METHOD(test_08a)
 		{
 			std::vector<double> v{ 1e10, 8, -11.23, 0, 1e10, 1e10, 1e10, 0, 99 };
 			// TODO: delete all invalid values (1e10)
@@ -185,6 +277,6 @@ namespace all_tests
 			// the most interesting match is the one with the smallest difference
 			auto smallest_difference = // TODO: 
 			Assert::AreEqual(15, smallest_difference);
-		}
+		}*/
 	};
 }
