@@ -222,10 +222,12 @@ namespace all_tests
 
 			Assert::AreEqual("nxxspxrxkx", s.c_str());
 		}
-		/*TEST_METHOD(test_08a)
+		TEST_METHOD(test_08a)
 		{
 			std::vector<double> v{ 1e10, 8, -11.23, 0, 1e10, 1e10, 1e10, 0, 99 };
 			// TODO: delete all invalid values (1e10)
+			v.erase(std::remove(v.begin(), v.end(), 1e10), v.end());
+
 			Assert::AreEqual(5ull, v.size());
 			Assert::AreEqual(8., v[0]);
 			Assert::AreEqual(99., v[4]);
@@ -234,7 +236,9 @@ namespace all_tests
 		TEST_METHOD(test_08b)
 		{
 			std::string s("poliuretan");
-			// TODO: delete all vowels 
+			// TODO: delete all vowels
+			s.erase(std::remove_if(s.begin(), s.end(), is_vowel), s.end());
+			
 			Assert::AreEqual("plrtn", s.c_str());
 		}
 		TEST_METHOD(test_09)
@@ -242,6 +246,16 @@ namespace all_tests
 			struct exam { std::string name; int points, grade; };
 			std::vector<exam> v{ {"Pero", 55, 2}, {"Iva", 93, 5}, {"Marko", 89, 5} };
 			// TODO: sort vector by grade, then by points
+			struct comp {
+				bool operator() (const exam& e1, const exam& e2) {
+					if (e1.grade != e2.grade) {
+						return e1.grade > e2.grade;
+					}
+					return e1.points > e2.points;
+				}
+			};
+			std::sort(v.begin(), v.end(), comp());
+
 			Assert::AreEqual("Iva", v[0].name.c_str());
 			Assert::AreEqual("Marko", v[1].name.c_str());
 			Assert::AreEqual("Pero", v[2].name.c_str());
@@ -261,22 +275,28 @@ namespace all_tests
 			std::shuffle(v.begin(), v.end(), g);
 
 			// TODO: put median value in the middle of vector. fast.
+			v.insert(v.begin() + (v.size() / 2) + 1, 1000);  // 7.4 sec
+			//std::nth_element(v.begin(), v.begin() + v.size() / 2, v.end());  // 9.9 sec
 			Assert::AreEqual(1000., v[v.size() / 2]); // median value
 		}
 		TEST_METHOD(test_11)
 		{
 			std::vector<double> v{ 11, 0.5, -97.23, -23.11, 48.78, 22.96, -77 };
-			auto smallest_value = // TODO: 
+			auto smallest_value = *std::min_element(v.begin(), v.end());
 			Assert::AreEqual(-97.23, smallest_value);
-			auto largest_value = // TODO: 
+			auto largest_value = *std::max_element(v.begin(), v.end());
 			Assert::AreEqual(48.78, largest_value);
 		}
 		TEST_METHOD(test_12)
 		{
 			std::vector<int> atp_points{ 8445, 7480, 6220, 5300, 5285 };
 			// the most interesting match is the one with the smallest difference
-			auto smallest_difference = // TODO: 
+			std::sort(atp_points.begin(), atp_points.end());
+			std::vector<int> differences;
+			std::adjacent_difference(atp_points.begin(), atp_points.end(), std::back_inserter(differences));
+			differences.erase(differences.begin());
+			auto smallest_difference = *std::min_element(differences.begin(), differences.end());
 			Assert::AreEqual(15, smallest_difference);
-		}*/
+		}
 	};
 }
